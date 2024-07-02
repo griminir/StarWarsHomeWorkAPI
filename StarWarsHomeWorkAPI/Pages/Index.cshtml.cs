@@ -19,15 +19,16 @@ namespace StarWarsHomeWorkAPI.Pages
 
         public async Task OnGet()
         {
-            await GetPersonById();
+            await GetPersonById("1");
         }
 
-        private async Task GetPersonById()
+        private async Task GetPersonById(string id)
         {
             var _client = _httpClientFactory.CreateClient();
-            var response = await _client.GetAsync("http://swapi.dev/api/people/1");
+            var response = await _client.GetAsync($"https://swapi.dev/api/people/{id}");
 
-            List<PersonModel> people;
+            PersonModel person;
+            List<FilmModel> movies = new List<FilmModel>();
 
             if (response.IsSuccessStatusCode)
             {
@@ -36,7 +37,14 @@ namespace StarWarsHomeWorkAPI.Pages
                     PropertyNameCaseInsensitive = true
                 };
                 var responsData = await response.Content.ReadAsStringAsync();
-                people = JsonSerializer.Deserialize<List<PersonModel>>(responsData, options);
+                person = JsonSerializer.Deserialize<PersonModel>(responsData, options);
+
+                foreach (var film in person.Films)
+                {
+                    response = await _client.GetAsync(film);
+                    var responseFilm = await response.Content.ReadAsStringAsync();
+                    movies.Add(JsonSerializer.Deserialize<FilmModel>(responseFilm, options));
+                }
             }
             else
             {
